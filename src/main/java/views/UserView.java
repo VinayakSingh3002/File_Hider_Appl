@@ -3,6 +3,7 @@ package views;
 import dao.DataDAO;
 import model.Data;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -16,78 +17,97 @@ public class UserView {
      this.email = email;
     }
     public void home(){
-        do{
-            System.out.println("Welcome " + this.email);
-            System.out.println("Press 1 to show hidden files ");
-            System.out.println("Press 2 to hide a new file ");
-            System.out.println("Press 3 to unhide a file ");
-            System.out.println("Press 0 to exit ");
-            Scanner sc = new Scanner(System.in);
-            int ch = Integer.parseInt(sc.nextLine());
+
+        while(true){
+
+            String[] options = {
+                    "Show Hidden Files",
+                    "Hide New File",
+                    "Unhide File",
+                    "Exit"
+            };
+
+            int ch = JOptionPane.showOptionDialog(
+                    null,
+                    "Welcome " + this.email,
+                    "File Hider",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+            );
+
             switch (ch){
-                case 1 -> {
+
+                case 0 -> {
                     try{
-                     List<Data> files = DataDAO.getAllFiles(this.email);
-                        System.out.println("ID - File Name");
+                        List<Data> files = DataDAO.getAllFiles(this.email);
+
+                        StringBuilder sb = new StringBuilder("ID - File Name\n");
+
                         for(Data file: files){
-                            System.out.println(file.getId() +" - " + file.getFileName());
+                            sb.append(file.getId())
+                                    .append(" - ")
+                                    .append(file.getFileName())
+                                    .append("\n");
                         }
-                }
-                    catch(SQLException e){
+
+                        JOptionPane.showMessageDialog(null,sb.toString());
+
+                    }catch(SQLException e){
                         e.printStackTrace();
                     }
-            }
-            case 2->{
-                System.out.println("Enter the file Path: ");
-                String path = sc.nextLine();
-                File f = new File(path);
-                Data file = new Data(0,f.getName(), path, this.email);
+                }
 
-                try{
-                    DataDAO.hideFile(file);
-                }
-                catch (SQLException e){
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            case 3->{
-                List<Data> files = null;
-                try {
-                    files = DataDAO.getAllFiles(this.email);
+                case 1 -> {
+                    JFileChooser chooser = new JFileChooser();
+                    int result = chooser.showOpenDialog(null);
 
-                System.out.println("ID - File Name");
-                for(Data file: files){
-                    System.out.println(file.getId() +" - " + file.getFileName());
-                }
-                System.out.println("Enter the id of file to unhide: ");
-                int id = Integer.parseInt(sc.nextLine());
-                boolean isValidID = false;
-                for(Data file : files){
-                    if(file.getId() == id){
-                        isValidID = true;
-                        break;
+                    if(result == JFileChooser.APPROVE_OPTION){
+
+                        File f = chooser.getSelectedFile();
+
+                        Data file = new Data(0,f.getName(),f.getAbsolutePath(),this.email);
+
+                        try{
+                            DataDAO.hideFile(file);
+                            JOptionPane.showMessageDialog(null,"File Hidden Successfully");
+
+                        }catch(Exception e){
+                            e.printStackTrace();
+                        }
                     }
                 }
-                if(isValidID){
-                    DataDAO.unhide(id);
+
+                case 2 -> {
+                    try{
+
+                        List<Data> files = DataDAO.getAllFiles(this.email);
+
+                        StringBuilder sb = new StringBuilder("ID - File Name\n");
+
+                        for(Data file: files){
+                            sb.append(file.getId())
+                                    .append(" - ")
+                                    .append(file.getFileName())
+                                    .append("\n");
+                        }
+
+                        String idStr = JOptionPane.showInputDialog(sb + "\nEnter File ID to Unhide:");
+
+                        int id = Integer.parseInt(idStr);
+
+                        DataDAO.unhide(id);
+
+                    }
+                    catch(Exception e){
+                        e.printStackTrace();
+                    }
                 }
-                else{
-                    System.out.println("Wrong ID");
-                }
-                }
-                catch (SQLException e){
-                    e.printStackTrace();
-                }
-                catch (IOException  e){
-                    e.printStackTrace();
-                }
-            }
-            case 0 ->{
-                    System.exit(0);
+
+                case 3 -> System.exit(0);
             }
         }
-        } while(true);
     }
 }
